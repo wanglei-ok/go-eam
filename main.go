@@ -21,11 +21,12 @@ import (
 	"time"
 	"strings"
 	"log"
+	"github.com/wanglei-ok/logfile"
 )
 
 
 func init() {
-	logSetup()
+	logfile.Setup()
 }
 
 func main() {

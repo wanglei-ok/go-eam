@@ -140,3 +140,38 @@ func GetEthAddress() ([]EthAddressInfo, error){
 
 	return eais, nil
 }
+
+
+func UpdateAddressLogByCrowdOrder() error {
+	//-- 用订单数据更新监控地址列表
+	//-- 1.订单列表中不存在的地址,不再监控
+	//UPDATE ec_address_log SET state = '1' WHERE type='eth' AND address NOT IN ( SELECT DISTINCT pay_url AS address FROM `ec_crowd_order` WHERE order_type='eth' AND is_delete=0 AND  pay_status IN (0,2) );
+	//
+	//-- 2. 订单列表中的地址,开始监控
+	//UPDATE ec_address_log SET state = '0' WHERE type='eth' AND address IN ( SELECT DISTINCT pay_url AS address FROM `ec_crowd_order` WHERE order_type='eth' AND is_delete=0 AND  pay_status IN (0,2) );
+	//
+	//-- 3. 插入新的监控地址
+	//INSERT INTO ec_address_log (address,type,state,last_block) SELECT DISTINCT pay_url AS address, 'eth' AS type, '0' AS state, 0 AS last_block FROM `ec_crowd_order` WHERE order_type='eth' AND is_delete=0 AND  pay_status IN (0,2) AND NOT EXISTS (SELECT address FROM ec_address_log WHERE address = ec_crowd_order.pay_url);
+
+
+	var sqls = [...]string {
+		"UPDATE ec_address_log SET state = '1' WHERE type='eth' AND address NOT IN ( SELECT DISTINCT pay_url AS address FROM `ec_crowd_order` WHERE order_type='eth' AND is_delete=0 AND  pay_status IN (0,2) );",
+		"UPDATE ec_address_log SET state = '0' WHERE type='eth' AND address IN ( SELECT DISTINCT pay_url AS address FROM `ec_crowd_order` WHERE order_type='eth' AND is_delete=0 AND  pay_status IN (0,2) );",
+		"INSERT INTO ec_address_log (address,type,state,last_block) SELECT DISTINCT pay_url AS address, 'eth' AS type, '0' AS state, 0 AS last_block FROM `ec_crowd_order` WHERE order_type='eth' AND is_delete=0 AND  pay_status IN (0,2) AND NOT EXISTS (SELECT address FROM ec_address_log WHERE address = ec_crowd_order.pay_url);",
+	}
+
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+
+	for _, sql := range sqls {
+		_, err := tx.Exec(sql)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	return tx.Commit()
+}

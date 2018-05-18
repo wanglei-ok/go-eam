@@ -45,6 +45,12 @@ func main() {
 	//程序结束前关闭数据库
 	defer CloseDatabase()
 
+	//用订单数据更新监控地址列表
+	if err := UpdateAddressLogByCrowdOrder(); err != nil {
+		log.Println("Error UpdateAddressLogByCrowdOrder:", err.Error() )
+		return
+	}
+
 	//取得地址和最后一次更新的块号
 	eais, err := GetEthAddress()
 	if err != nil {

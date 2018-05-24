@@ -45,9 +45,14 @@ func main() {
 	//程序结束前关闭数据库
 	defer CloseDatabase()
 
-	//用订单数据更新监控地址列表
-	if err := UpdateAddressLogByCrowdOrder(); err != nil {
-		log.Println("Error UpdateAddressLogByCrowdOrder:", err.Error() )
+	////用订单数据更新监控地址列表
+	//if err := UpdateAddressLogByCrowdOrder(); err != nil {
+	//	log.Println("Error UpdateAddressLogByCrowdOrder:", err.Error() )
+	//	return
+	//}
+	//用网站配置更新监控地址列表
+	if err := UpdateAddressLogBySetting(); err != nil {
+		log.Println("Error UpdateAddressLogBySetting:", err.Error() )
 		return
 	}
 

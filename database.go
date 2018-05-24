@@ -175,3 +175,37 @@ func UpdateAddressLogByCrowdOrder() error {
 
 	return tx.Commit()
 }
+
+
+func UpdateAddressLogBySetting() error {
+	//-- 用设置更新监控地址列表
+	//-- 1.设置中不存在地址,不再监控
+	//UPDATE ec_address_log SET state = '1' WHERE type='eth' AND LOWER(address) NOT IN ( SELECT DISTINCT LOWER(set_value) FROM ec_setting WHERE set_key = 'eth_acceptAddress' );
+	//
+	//-- 2. 设置中的地址,开始监控
+	//UPDATE ec_address_log SET state = '0' WHERE type='eth' AND LOWER(address) IN ( SELECT DISTINCT LOWER(set_value) FROM ec_setting WHERE set_key = 'eth_acceptAddress' );
+	//
+	//-- 3. 插入新的监控地址
+	//INSERT INTO ec_address_log (address,type,state,last_block) SELECT DISTINCT set_value AS address, 'eth' AS type, '0' AS state, 0 AS last_block FROM ec_setting WHERE set_key = 'eth_acceptAddress' AND NOT EXISTS (SELECT LOWER(address) FROM ec_address_log WHERE LOWER(address) = LOWER(ec_setting.set_value)) LIMIT 1;
+
+	var sqls = [...]string {
+		"UPDATE ec_address_log SET state = '1' WHERE type='eth' AND LOWER(address) NOT IN ( SELECT DISTINCT LOWER(set_value) FROM ec_setting WHERE set_key = 'eth_acceptAddress' );",
+		"UPDATE ec_address_log SET state = '0' WHERE type='eth' AND LOWER(address) IN ( SELECT DISTINCT LOWER(set_value) FROM ec_setting WHERE set_key = 'eth_acceptAddress' );",
+		"INSERT INTO ec_address_log (address,type,state,last_block) SELECT DISTINCT set_value AS address, 'eth' AS type, '0' AS state, 0 AS last_block FROM ec_setting WHERE set_key = 'eth_acceptAddress' AND NOT EXISTS (SELECT LOWER(address) FROM ec_address_log WHERE LOWER(address) = LOWER(ec_setting.set_value)) LIMIT 1;",
+	}
+
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+
+	for _, sql := range sqls {
+		_, err := tx.Exec(sql)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	return tx.Commit()
+}
